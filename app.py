@@ -182,12 +182,6 @@ def venues():
             "venues": Venue.query.filter_by(city=city[0]).all()
         })
 
-    # data = {
-    #     "city": city,
-    #     "state": Venue.state,
-    #     "venues": venues
-    # }
-
     return render_template('pages/venues.html', areas=data)
 
 
@@ -219,6 +213,30 @@ def show_venue(venue_id):
     # TODO: replace with real venue data from the venues table, using venue_id
     venue = Venue.query.get(venue_id)
 
+    current_time = datetime.now()
+    shows = venue.venue_shows
+    past_shows = []
+    upcoming_shows = []
+    for show in shows:
+        show_time = show.start_time
+        if show_time < current_time:
+            past_shows.append({
+                "artist_id": show.artist_id,
+                "artist_name": show.artist.name,
+                "artist_image_link": show.artist.image_link,
+                "start_time": show.start_time
+            })
+        elif show_time >= current_time:
+            upcoming_shows.append({
+                "artist_id": show.artist_id,
+                "artist_name": show.artist.name,
+                "artist_image_link": show.artist.image_link,
+                "start_time": show.start_time
+            })
+
+    past_shows_count = len(past_shows)
+    upcoming_shows_count = len(upcoming_shows)
+
     data = {
         "id": venue.id,
         "name": venue.name,
@@ -232,15 +250,10 @@ def show_venue(venue_id):
         "seeking_talent": venue.seeking_talent,
         "seeking_description": venue.seeking_description,
         "image_link": venue.image_link,
-        "past_shows": [{
-            "artist_id": 4,
-            "artist_name": "Guns N Petals",
-            "artist_image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
-            "start_time": "2019-05-21T21:30:00.000Z"
-        }],
-        "upcoming_shows": [],
-        "past_shows_count": 1,
-        "upcoming_shows_count": 0,
+        "past_shows": past_shows,
+        "upcoming_shows": upcoming_shows,
+        "past_shows_count": past_shows_count,
+        "upcoming_shows_count": upcoming_shows_count,
     }
 
     return render_template('pages/show_venue.html', venue=data)
