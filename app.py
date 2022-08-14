@@ -97,6 +97,9 @@ class Show(db.Model):
         'venues.id'), nullable=False)
     start_time = db.Column(db.DateTime())
 
+    def __repr__(self):
+        return f'<Show {self.id} {self.start_time} {self.venue_id} {self.artist_id}>'
+
 
 # shows = db.Table('shows',
 #                  db.Column('id', db.Integer, primary_key=True),
@@ -111,9 +114,14 @@ class Show(db.Model):
 # Filters.
 #----------------------------------------------------------------------------#
 
+# changed date format - source (stack overflow)
 
 def format_datetime(value, format='medium'):
-    date = dateutil.parser.parse(value)
+    # date = dateutil.parser.parse(value)
+    if isinstance(value, str):
+        date = dateutil.parser.parse(value)
+    else:
+        date = value
     if format == 'full':
         format = "EEEE MMMM, d, y 'at' h:mma"
     elif format == 'medium':
@@ -190,12 +198,13 @@ def search_venues():
     # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
 
     search_term = request.form['search_term']
-    s = Venue.name.like('%' + search_term + '%')
-    venues = Venue.query.filter_by(name=s)
+    venues = Venue.query.filter(Venue.name.ilike(
+        '%' + search_term + '%')).order_by(Venue.name).all()
+
+    # venues = Venue.query.filter(Venue.name == 'K1 Club')
+    count = len(venues)
 
     print(venues)
-    # venues = venues.order_by(Venue.name).all()
-    count = 0
 
     response = {
         "count": count,
@@ -331,13 +340,15 @@ def search_artists():
     # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
     # seach for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
     # search for "band" should return "The Wild Sax Band".
+
+    search_term = request.form['search_term']
+    artists = Artist.query.filter(Artist.name.like(
+        '%' + search_term + '%')).order_by(Artist.name).all()
+    count = len(artists)
+
     response = {
-        "count": 1,
-        "data": [{
-            "id": 4,
-            "name": "Guns N Petals",
-            "num_upcoming_shows": 0,
-        }]
+        "count": count,
+        "data": artists
     }
     return render_template('pages/search_artists.html', results=response, search_term=request.form.get('search_term', ''))
 
@@ -582,42 +593,20 @@ def delete_(artist_id):
 def shows():
     # displays list of shows at /shows
     # TODO: replace with real venues data.
-    data = [{
-        "venue_id": 1,
-        "venue_name": "The Musical Hop",
-        "artist_id": 4,
-        "artist_name": "Guns N Petals",
-        "artist_image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80",
-        "start_time": "2019-05-21T21:30:00.000Z"
-    }, {
-        "venue_id": 3,
-        "venue_name": "Park Square Live Music & Coffee",
-        "artist_id": 5,
-        "artist_name": "Matt Quevedo",
-        "artist_image_link": "https://images.unsplash.com/photo-1495223153807-b916f75de8c5?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=334&q=80",
-        "start_time": "2019-06-15T23:00:00.000Z"
-    }, {
-        "venue_id": 3,
-        "venue_name": "Park Square Live Music & Coffee",
-        "artist_id": 6,
-        "artist_name": "The Wild Sax Band",
-        "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-        "start_time": "2035-04-01T20:00:00.000Z"
-    }, {
-        "venue_id": 3,
-        "venue_name": "Park Square Live Music & Coffee",
-        "artist_id": 6,
-        "artist_name": "The Wild Sax Band",
-        "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-        "start_time": "2035-04-08T20:00:00.000Z"
-    }, {
-        "venue_id": 3,
-        "venue_name": "Park Square Live Music & Coffee",
-        "artist_id": 6,
-        "artist_name": "The Wild Sax Band",
-        "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
-        "start_time": "2035-04-15T20:00:00.000Z"
-    }]
+
+    shows = Show.query.all()
+    data = []
+
+    for show in shows:
+        data.append({
+            "venue_id": show.venue_id,
+            "venue_name": show.venue.name,
+            "artist_id": show.artist_id,
+            "artist_name": show.artist.name,
+            "artist_image_link": show.artist.image_link,
+            "start_time": show.start_time
+        })
+
     return render_template('pages/shows.html', shows=data)
 
 
