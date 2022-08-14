@@ -17,6 +17,7 @@ from logging import Formatter, FileHandler
 from flask_wtf import Form
 from forms import *
 import sys
+from sqlalchemy.orm import relationship
 #----------------------------------------------------------------------------#
 # App Config.
 #----------------------------------------------------------------------------#
@@ -53,6 +54,8 @@ class Venue(db.Model):
     website_link = db.Column(db.String(120))
     seeking_talent = db.Column(db.Boolean, default=False)
     seeking_description = db.Column(db.Text(), nullable=True)
+    venue_shows = db.relationship('Show',
+                                  backref='venue', lazy=True)
 
     def __repr__(self):
         return f'<Venue {self.id} {self.name} {self.city} {self.state}>'
@@ -74,8 +77,8 @@ class Artist(db.Model):
     website_link = db.Column(db.String(120))
     seeking_venue = db.Column(db.Boolean(), default=False)
     seeking_description = db.Column(db.Text(), nullable=True)
-    shows = db.relationship('Show', secondary='shows',
-                            backref='artists', lazy=True)
+    artist_shows = db.relationship('Show',
+                                   backref='artist', lazy=True)
 
     def __repr__(self):
         return f'<Artist {self.id} {self.name} {self.city} {self.state}>'
@@ -85,17 +88,24 @@ class Artist(db.Model):
 
 
 class Show(db.Model):
+    __tablename__ = 'shows'
 
     id = db.Column(db.Integer, primary_key=True)
+    artist_id = db.Column(db.Integer, db.ForeignKey(
+        'artists.id'), nullable=False)
+    venue_id = db.Column(db.Integer, db.ForeignKey(
+        'venues.id'), nullable=False)
     start_time = db.Column(db.DateTime())
 
 
-shows = db.Table('shows',
-                 db.Column('artist_id', db.Integer, db.ForeignKey(
-                     'artists.id'), nullable=True),
-                 db.Column('venue_id', db.Integer, db.ForeignKey(
-                     'venues.id'), nullable=True),
-                 db.Column('show_id', db.Integer, db.ForeignKey('show.id'), nullable=True))
+# shows = db.Table('shows',
+#                  db.Column('id', db.Integer, primary_key=True),
+#                  db.Column('artist_id', db.Integer, db.ForeignKey(
+#                      'artists.id'), nullable=True),
+#                  db.Column('venue_id', db.Integer, db.ForeignKey(
+#                      'venues.id'), nullable=True),
+#                  db.Column('start_time', db.DateTime())
+#                  )
 
 #----------------------------------------------------------------------------#
 # Filters.
@@ -180,9 +190,12 @@ def search_venues():
     # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
 
     search_term = request.form['search_term']
-    venues = venues.filter(Venue.name.like('%' + search_term + '%'))
-    venues = venues.order_by(Venue.name).all()
-    count = venues.count()
+    s = Venue.name.like('%' + search_term + '%')
+    venues = Venue.query.filter_by(name=s)
+
+    print(venues)
+    # venues = venues.order_by(Venue.name).all()
+    count = 0
 
     response = {
         "count": count,
@@ -619,6 +632,20 @@ def create_shows():
 def create_show_submission():
     # called to create new shows in the db, upon submitting new show listing form
     # TODO: insert form data as a new Show record in the db, instead
+
+    # venue = Venue.query.get(request.form['venue_id'])
+    # artist = Artist.query.get(request.form['artist_id'])
+    # start_time = request.form['start_time']
+    # venue.artists.append(artist)
+    # show.start_time = request.form['start_time']
+    venue_id = request.form['venue_id']
+    artist_id = request.form['artist_id']
+    start_time = request.form['start_time']
+
+    show = Show(venue_id=venue_id, artist_id=artist_id, start_time=start_time)
+
+    db.session.add(show)
+    db.session.commit()
 
     # on successful db insert, flash success
     flash('Show was successfully listed!')
