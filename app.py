@@ -289,7 +289,6 @@ def create_venue_submission():
 
     try:
         form = VenueForm(request.form)
-
         venue = Venue(name=form.name.data, city=form.city.data, state=form.state.data, address=form.address.data,
                       phone=form.phone.data, genres=form.genres.data, image_link=form.image_link.data, facebook_link=form.facebook_link.data,
                       website_link=form.website_link.data, seeking_talent=form.seeking_talent.data, seeking_description=form.seeking_description.data)
@@ -528,20 +527,21 @@ def edit_venue_submission(venue_id):
     # TODO: take values from the form submitted, and update existing
     # venue record with ID <venue_id> using the new attributes
     error = False
+    form = VenueForm(request.form)
     try:
 
         venue = Venue.query.get(venue_id)
-        venue.name = request.form['name']
-        venue.city = request.form['city']
-        venue.state = request.form['state']
-        venue.address = request.form['address']
-        venue.phone = request.form['phone']
-        venue.genres = ','.join(request.form.getlist('genres'))
-        venue.image_link = request.form['image_link']
-        venue.facebook_link = request.form['facebook_link']
-        venue.website_link = request.form['website_link']
-        venue.seeking_talent = strtobool(request.form['seeking_talent'])
-        venue.seeking_description = request.form['seeking_description']
+        venue.name = form.name.data
+        venue.city = form.city.data
+        venue.state = form.state.data
+        venue.address = form.address.data
+        venue.phone = form.phone.data
+        venue.genres = ','.join(form.genres.data)
+        venue.image_link = form.image_link.data
+        venue.facebook_link = form.facebook_link.data
+        venue.website_link = form.website_link.data
+        venue.seeking_talent = form.seeking_talent.data
+        venue.seeking_description = form.seeking_description.data
 
         db.session.commit()
     except:
