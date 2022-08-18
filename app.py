@@ -57,6 +57,19 @@ class Venue(db.Model):
     venue_shows = db.relationship('Show',
                                   backref='venue', lazy=True)
 
+    def __init__(self, name, city, state, address, phone, genres, image_link, facebook_link, website_link, seeking_talent, seeking_description):
+        self.name = name
+        self.city = city
+        self.state = state
+        self.address = address
+        self.phone = phone
+        self.genres = genres
+        self.image_link = image_link
+        self.facebook_link = facebook_link
+        self.website_link = website_link
+        self.seeking_talent = seeking_talent
+        self.seeking_description = seeking_description
+
     def __repr__(self):
         return f'<Venue {self.id} {self.name} {self.city} {self.state}>'
 
@@ -273,22 +286,13 @@ def create_venue_submission():
     # TODO: insert form data as a new Venue record in the db, instead
     data = {}
     error = False
-    try:
-        name = request.form['name']
-        city = request.form['city']
-        state = request.form['state']
-        address = request.form['address']
-        phone = request.form['phone']
-        genres = ','.join(request.form.getlist('genres'))
-        image_link = request.form['image_link']
-        facebook_link = request.form['facebook_link']
-        website_link = request.form['website_link']
-        seeking_talent = strtobool(request.form['seeking_talent'])
-        seeking_description = request.form['seeking_description']
 
-        venue = Venue(name=name, city=city, state=state, address=address,
-                      phone=phone, genres=genres, image_link=image_link, facebook_link=facebook_link,
-                      website_link=website_link, seeking_talent=seeking_talent, seeking_description=seeking_description)
+    try:
+        form = VenueForm(request.form)
+
+        venue = Venue(name=form.name.data, city=form.city.data, state=form.state.data, address=form.address.data,
+                      phone=form.phone.data, genres=form.genres.data, image_link=form.image_link.data, facebook_link=form.facebook_link.data,
+                      website_link=form.website_link.data, seeking_talent=form.seeking_talent.data, seeking_description=form.seeking_description.data)
 
         db.session.add(venue)
         db.session.commit()
@@ -296,7 +300,7 @@ def create_venue_submission():
         error = True
         db.session.rollback()
         print(sys.exc_info())
-    # TODO: modify data to be the data object returned from db insertion
+    #  # TODO: modify data to be the data object returned from db insertion
     finally:
         db.session.close()
         if error == True:
@@ -308,7 +312,7 @@ def create_venue_submission():
                   ' was successfully listed!')
     # TODO: on unsuccessful db insert, flash an error instead.
     # e.g., flash('An error occurred. Venue ' + data.name + ' could not be listed.')
-    # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
+ # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
     return render_template('pages/home.html')
 
 
@@ -355,7 +359,7 @@ def search_artists():
     # search for "band" should return "The Wild Sax Band".
 
     search_term = request.form['search_term']
-    artists = Artist.query.filter(Artist.name.like(
+    artists = Artist.query.filter(Artist.name.ilike(
         '%' + search_term + '%')).order_by(Artist.name).all()
     count = len(artists)
 
