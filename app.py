@@ -15,6 +15,7 @@ from flask_sqlalchemy import SQLAlchemy
 import logging
 from logging import Formatter, FileHandler
 from flask_wtf import Form
+from flask_wtf import FlaskForm as Form
 from forms import *
 import sys
 from sqlalchemy.orm import relationship
@@ -377,28 +378,31 @@ def show_artist(artist_id):
     artist = Artist.query.get(artist_id)
 
     current_time = datetime.now()
-    shows = artist.artist_shows
+    past_shows_query = db.session.query(Show).join(
+        Venue).filter(Show.artist_id == artist.id).filter(Show.start_time < current_time).all()
+    upcoming_shows_query = db.session.query(Show).join(
+        Venue).filter(Show.artist_id == artist.id).filter(Show.start_time > current_time).all()
+    # shows = artist.artist_shows
     past_shows = []
     upcoming_shows = []
-    for show in shows:
-        show_time = show.start_time
-        if show_time < current_time:
-            past_shows.append({
-                "venue_id": show.venue_id,
-                "venue_name": show.venue.name,
-                "venue_image_link": show.venue.image_link,
-                "start_time": show.start_time
-            })
-        elif show_time >= current_time:
-            upcoming_shows.append({
-                "venue_id": show.venue_id,
-                "venue_name": show.venue.name,
-                "venue_image_link": show.venue.image_link,
-                "start_time": show.start_time
-            })
+    for show in past_shows_query:
+        past_shows.append({
+            "venue_id": show.venue_id,
+            "venue_name": show.venue.name,
+            "venue_image_link": show.venue.image_link,
+            "start_time": show.start_time
+        })
 
-        past_shows_count = len(past_shows)
-        upcoming_shows_count = len(upcoming_shows)
+    for show in upcoming_shows_query:
+        upcoming_shows.append({
+            "venue_id": show.venue_id,
+            "venue_name": show.venue.name,
+            "venue_image_link": show.venue.image_link,
+            "start_time": show.start_time
+        })
+
+    past_shows_count = len(past_shows_query)
+    upcoming_shows_count = len(upcoming_shows_query)
 
     data = {
         "id": artist.id,
