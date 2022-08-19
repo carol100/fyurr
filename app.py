@@ -228,28 +228,29 @@ def show_venue(venue_id):
     venue = Venue.query.get(venue_id)
 
     current_time = datetime.now()
-    shows = venue.venue_shows
+    past_shows_query = db.session.query(Show).join(Artist).filter(
+        Show.venue_id == venue.id).filter(Show.start_time < current_time).all()
+    upcoming_shows_query = db.session.query(Show).join(Artist).filter(
+        Show.artist_id == venue.id).filter(Show.start_time > current_time).all()
     past_shows = []
     upcoming_shows = []
-    for show in shows:
-        show_time = show.start_time
-        if show_time < current_time:
-            past_shows.append({
-                "artist_id": show.artist_id,
-                "artist_name": show.artist.name,
-                "artist_image_link": show.artist.image_link,
-                "start_time": show.start_time
-            })
-        elif show_time >= current_time:
-            upcoming_shows.append({
-                "artist_id": show.artist_id,
-                "artist_name": show.artist.name,
-                "artist_image_link": show.artist.image_link,
-                "start_time": show.start_time
-            })
+    for show in past_shows_query:
+        past_shows.append({
+            "artist_id": show.artist_id,
+            "artist_name": show.artist.name,
+            "artist_image_link": show.artist.image_link,
+            "start_time": show.start_time
+        })
+    for show in upcoming_shows_query:
+        upcoming_shows.append({
+            "artist_id": show.artist_id,
+            "artist_name": show.artist.name,
+            "artist_image_link": show.artist.image_link,
+            "start_time": show.start_time
+        })
 
-    past_shows_count = len(past_shows)
-    upcoming_shows_count = len(upcoming_shows)
+    past_shows_count = len(past_shows_query)
+    upcoming_shows_count = len(upcoming_shows_query)
 
     data = {
         "id": venue.id,
